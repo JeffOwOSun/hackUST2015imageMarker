@@ -1,159 +1,159 @@
 <html>
 <head>
-	<title>Picture Picker</title>
-	<script src="https://code.jquery.com/jquery-2.1.3.js"></script>
-	<script src="jcanvas.js"></script>
-	<script src="jcanvas-handles.js"></script>
-	<style>
-		html,body {
-			width: 100%;
-			height: 100%;
-			margin: 0px;
-		}
-		#base-wrapper {
-			position:relative;
-			width: 100%;
-			height: 100%;
-			margin: 0px;
-		}
-		#image-holder {
-			position:absolute;
-			width: 100%;
-			height: 100%;
-			margin: 0px;
-			z-index: 0;
-		}
-		#canvas-wrapper	{
-			position: absolute;
-			width: 100%;
-			height: 100%;
-			margin: 0px;
-			z-index: 1;
-		}
-	</style>
+    <title>Picture Picker</title>
+    <script src="https://code.jquery.com/jquery-2.1.3.js"></script>
+    <script src="jcanvas.js"></script>
+    <script src="jcanvas-handles.js"></script>
+    <style>
+        html,body {
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+        }
+        #base-wrapper {
+            position:relative;
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+        }
+        #image-holder {
+            position:absolute;
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            z-index: 0;
+        }
+        #canvas-wrapper {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            margin: 0px;
+            z-index: 1;
+        }
+    </style>
 </head>
 <body>
-	<div id="base-wrapper">
-		<div id="image-holder"></div>
-		<div id="canvas-wrapper">
-			<canvas id="main-canvas">
-				Your web browser does not support canvas
-			</canvas>
-		</div>
-		<div id="ratio-input-wrapper">
-		</div>
-		<div id="upload-progess-wrapper">
-		</div>
-	</div>
-	<script>
-	//auto-set image size
-	function set_body_height() { // set body height = window height
-		$('body').height($(window).height());
-	}
-	$(document).ready(function() {
-	    $(window).bind('resize', set_body_height);
-	    set_body_height();
-	});
-	</script>
-	<script>
-	$(window).load(function()
-	{
-		var current_image = null;
+    <div id="base-wrapper">
+        <div id="image-holder"></div>
+        <div id="canvas-wrapper">
+            <canvas id="main-canvas">
+                Your web browser does not support canvas
+            </canvas>
+        </div>
+        <div id="ratio-input-wrapper">
+        </div>
+        <div id="upload-progess-wrapper">
+        </div>
+    </div>
+    <script>
+    //auto-set image size
+    function set_body_height() { // set body height = window height
+        $('body').height($(window).height());
+    }
+    $(document).ready(function() {
+        $(window).bind('resize', set_body_height);
+        set_body_height();
+    });
+    </script>
+    <script>
+    $(window).load(function()
+    {
+        var current_image = null;
 
-		function resize_canvas()
-		{
-			canvas = document.getElementById("main-canvas");
-			canvas.width = window.innerWidth;
-			canvas.height = window.innerHeight;
-		}
-		$(window).resize(resize_canvas);
-		resize_canvas(); //call once to set canvas size
+        function resize_canvas()
+        {
+            canvas = document.getElementById("main-canvas");
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        $(window).resize(resize_canvas);
+        resize_canvas(); //call once to set canvas size
 
-		//load picture function
-		function load_image()
-		{
-			$.ajax({
-				url: "load_image.php"
-			}).done(function(data)
-			{
-				if(data)
-				{
+        //load picture function
+        function load_image()
+        {
+            $.ajax({
+                url: "load_image.php"
+            }).done(function(data)
+            {
+                if(data)
+                {
 
-					current_image = JSON.parse(data);
-					//display the image
-					//canvas_drawimage(current_image.path);
-					//draw boxes if needed	
-					current_image.image_object = new Image();
-				    current_image.image_object.src = current_image.path;
-				    current_image.image_object.onload = function () {
-				        $('#image-holder').css('background', 'url(' + current_image.path +') no-repeat center center fixed').css('background-size', 'contain');
-				        info_clear();
-				    };
-				    current_image.image_object.onerror = function () {
-				        $('#image-holder').empty().html('That image is not available.');
-				    }
-				}
-				else
-				{
-					$('#image-holder').empty().html('There are currently no images');
-					current_image = null;
-				}
-			})
-		}
-		
-		//space bar hit function i.e. submit
-		function on_key_hit(ev){
+                    current_image = JSON.parse(data);
+                    //display the image
+                    //canvas_drawimage(current_image.path);
+                    //draw boxes if needed  
+                    current_image.image_object = new Image();
+                    current_image.image_object.src = current_image.path;
+                    current_image.image_object.onload = function () {
+                        $('#image-holder').css('background', 'url(' + current_image.path +') no-repeat center center fixed').css('background-size', 'contain');
+                        info_clear();
+                    };
+                    current_image.image_object.onerror = function () {
+                        $('#image-holder').empty().html('That image is not available.');
+                    }
+                }
+                else
+                {
+                    $('#image-holder').empty().html('There are currently no images');
+                    current_image = null;
+                }
+            })
+    
+        
+        //space bar hit function i.e. submit
+        function on_key_hit(ev){
             if (!current_image) return;
-			if(ev.keyCode == 77 || ev.keyCode == 70) //male
-			{
-				
-				info_log("Submitting...\n");
-				
-				$.ajax({
-					type: "POST",
-					url: "submit.php",
-					data: {name: current_image.name, path: current_image.path, gender: (ev.keyCode == 77) ? 'm' : 'f'},
-					success: on_submit_success,
-					failure: on_submit_failure
-				})
+            if(ev.keyCode == 77 || ev.keyCode == 70) //male
+            {
+                
+                info_log("Submitting...\n");
+                
+                $.ajax({
+                    type: "POST",
+                    url: "submit.php",
+                    data: {name: current_image.name, path: current_image.path, gender: (ev.keyCode == 77) ? 'm' : 'f'},
+                    success: on_submit_success,
+                    failure: on_submit_failure
+                })
 
-				function on_submit_success(data)
-				{
-					info_log("submit success\n");
-					console.log("submit success!\ndata: ");
-					console.log(data);
-					//load a new picture
-					current_image = null;
-					boxes = [];
-					
-					load_image();
-				}
+                function on_submit_success(data)
+                {
+                    info_log("submit success\n");
+                    console.log("submit success!\ndata: ");
+                    console.log(data);
+                    //load a new picture
+                    current_image = null;
+                    boxes = [];
+                    
+                    load_image();
+                }
 
-				function on_submit_failure(errMsg)
-				{
-					info_log("submit failure\n");
-					console.log("submit failure!\nerrMsg: ");
-					console.log(errMsg);
-					alert("submission failed with: "+errMsg);
-				}
+                function on_submit_failure(errMsg)
+                {
+                    info_log("submit failure\n");
+                    console.log("submit failure!\nerrMsg: ");
+                    console.log(errMsg);
+                    alert("submission failed with: "+errMsg);
+                }
 
-			}
-		}
-		$(window).keydown(on_key_hit);
+            }
+        }
+        $(window).keydown(on_key_hit);
 
-			function info_log(message)
-		{
-			var info_holder = $('#image-holder');
-			info_holder.html(info_holder.html()+'<pre>'+message+'</pre>');
-		}
+            function info_log(message)
+        {
+            var info_holder = $('#image-holder');
+            info_holder.html(info_holder.html()+'<pre>'+message+'</pre>');
+        }
 
-		function info_clear()
-		{
-			$('#image-holder').empty();
-		}
+        function info_clear()
+        {
+            $('#image-holder').empty();
+        }
 
-		load_image();
-	})
-	</script>
+        load_image();
+    })
+    </script>
 </body>
 </html>
