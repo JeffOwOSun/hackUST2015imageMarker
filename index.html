@@ -108,11 +108,12 @@
             {
                 
                 info_log("Submitting...\n");
-                
+                gender = (ev.keyCode == 77) ? 'm' : 'f';
+
                 $.ajax({
                     type: "POST",
                     url: "submit.php",
-                    data: {name: current_image.name, path: current_image.path, gender: (ev.keyCode == 77) ? 'm' : 'f'},
+                    data: {id: current_image.id, gender: gender},
                     success: on_submit_success,
                     failure: on_submit_failure
                 })
