@@ -59,22 +59,6 @@
 	$(window).load(function()
 	{
 		var current_image = null;
-		var current_box = null;
-		var dragging = false;
-		var boxes = [];
-
-		//my custom Vector Class
-		function Vector(x,y)
-		{
-			this.x = x;
-			this.y = y;
-		}
-
-		function Box(top_left_point, bottom_right_point)
-		{
-			this.top_left_point = top_left_point;
-			this.bottom_right_point = bottom_right_point;
-		}
 
 		function resize_canvas()
 		{
@@ -117,99 +101,18 @@
 			})
 		}
 		
-		//callback function used by handle stop and drag stop
-		//retrieves coordinate information of the box in display unit, and saves as percentage unit
-		function save_coordinates(layer)
-		{
-			if (!current_image) return;
-			//alert('x: '+layer.x+' y: '+layer.y+' w: '+layer.width+' h: '+layer.height);
-			//get the two-point absolute data
-			var top_left_point = new Vector(layer.x - layer.width / 2, layer.y - layer.height / 2);
-			var bottom_right_point = new Vector(layer.x + layer.width / 2, layer.y + layer.height / 2);
-
-			//calculate percentage coordinates
-			var top_left_point_perc = bundle_get_perc_coordinate(top_left_point);
-			var bottom_right_point_perc = bundle_get_perc_coordinate(bottom_right_point);
-
-			current_box = realign_overflow_box(new Box(top_left_point_perc, bottom_right_point_perc));
-			//console.log(current_box);
-			/*var info ='';
-			info += "x1: "+current_box.top_left_point.x+"\n";
-			info += "y1: "+current_box.top_left_point.y+"\n";
-			info += "x2: "+current_box.bottom_right_point.x+"\n";
-			info += "y2: "+current_box.bottom_right_point.y+"\n";
-			info += "x2-x1: "+(current_box.bottom_right_point.x-current_box.top_left_point.x)+"\n";
-			info += "y2-y1: "+(current_box.bottom_right_point.y-current_box.top_left_point.y)+"\n";
-			info_log(info);
-			*/
-			//repaint the box
-			draw_box();
-		}
-
-		//clears the canvas and redraw the box
-		function draw_box()
-		{
-			//retrieve coordinates
-			var x = window.innerWidth / 2;
-			var y = window.innerHeight / 2;
-			var width = 100;
-			var height = 200;
-			//if this function is called because of resizing and current_box is not null, redraw the box
-			if (current_box)
-			{
-				//convert current_box's percentage value back to canvas absolute values
-				var top_left_point = bundle_reverse_perc_coordinate(current_box.top_left_point);
-				var bottom_right_point = bundle_reverse_perc_coordinate(current_box.bottom_right_point);
-				width = bottom_right_point.x - top_left_point.x;
-				height = bottom_right_point.y - top_left_point.y;
-				x = (top_left_point.x + bottom_right_point.x) / 2;
-				y = (top_left_point.y + bottom_right_point.y) / 2;
-			}
-			// Add rectangle layer w/o drawing
-			$('canvas').removeLayers().addLayer({
-				type: 'rectangle',
-				draggable: true,
-				strokeStyle: '#0f0',
-				strokeWidth: 4,
-				x: x, y: y,
-				width: width, height: height,
-				// Define handle properties
-				handle: {
-					type: 'arc',
-					strokeStyle: '#00f',
-					strokeWidth: 4,
-					radius: 10
-				},
-				resizeFromCenter: false,
-				constrainProportions: true,
-				dragstop: function(layer){save_coordinates(layer); dragging = false;},
-				dragstart: function(){dragging = true},
-				handlestop: function(layer){save_coordinates(layer); dragging = false;},
-				handlemove: function(){dragging = true},
-			})
-			// Redraw layers to ensure handles are on top of rectangle
-			.drawLayers();
-		}
-		$(window).resize(draw_box);
-		draw_box();
-		
 		//space bar hit function i.e. submit
-		function on_spacebar_hit(ev){
-			if (dragging) return;
-			if (!current_image) return;
-			if(ev.keyCode == 32) //indeed the space bar is hit
+		function on_key_hit(ev){
+            if (!current_image) return;
+			if(ev.keyCode == 77 || ev.keyCode == 70) //male
 			{
 				
-				//mark the current box as a positive sample
-				current_box.positive_classification = true;
-				current_box.image_id = current_image.id;
-				boxes.push(current_box);
-				info_log("saved positive training sample\nSubmitting...\n");
+				info_log("Submitting...\n");
 				
 				$.ajax({
 					type: "POST",
 					url: "submit.php",
-					data: {boxes: boxes},
+					data: {name: current_image.name, path: current_image.path, gender: (ev.keyCode == 77) ? 'm' : 'f'},
 					success: on_submit_success,
 					failure: on_submit_failure
 				})
@@ -235,132 +138,10 @@
 				}
 
 			}
-			//when n is pressed
-			if (ev.keyCode == 78)
-			{
-				//mark the current box as a positive sample
-				current_box.positive_classification = false;
-				current_box.image_id = current_image.id;
-				boxes.push(current_box);
-				info_log("saved negative training sample\n");
-			}
 		}
-		$(window).keydown(on_spacebar_hit);
+		$(window).keydown(on_key_hit);
 
-		
-		function bundle_get_perc_coordinate(given_point_absol)
-		{
-			if (!current_image) return;
-			var image_orig_size = new Vector(current_image.image_object.width, current_image.image_object.height);
-			var screen_size = new Vector(window.innerWidth, window.innerHeight);
-			var image_display_size = get_image_display_size(image_orig_size, screen_size);
-			var orig_point = get_orig_point(image_display_size, screen_size);
-
-			var rel_coordinate = get_rel_coordinate(given_point_absol, orig_point);
-			var perc_coordinate = get_perc_coordinate(rel_coordinate, image_display_size);
-
-			return perc_coordinate;
-		}
-		function bundle_reverse_perc_coordinate(given_point_perc)
-		{
-			if (!current_image) return;
-			var image_orig_size = new Vector(current_image.image_object.width, current_image.image_object.height);
-			var screen_size = new Vector(window.innerWidth, window.innerHeight);
-			var image_display_size = get_image_display_size(image_orig_size, screen_size);
-			var orig_point = get_orig_point(image_display_size, screen_size);
-
-			var rel_coordinate = reverse_perc_coordinate(given_point_perc, image_display_size);
-			var absol_coordinate = reverse_rel_coordinate(rel_coordinate, orig_point);
-
-			return absol_coordinate;
-		}
-
-		//these helper functions make use of my custom Vecor class
-		function get_image_display_size(image_orig_size, screen_size)
-		{
-			var image_aspect_ratio = image_orig_size.x / image_orig_size.y;
-			var screen_aspect_ratio = screen_size.x / screen_size.y;
-			//if the screen is wider
-			if (screen_aspect_ratio > image_aspect_ratio)
-			{
-				return new Vector(screen_size.y * image_aspect_ratio, screen_size.y);
-			}
-			//if the screen is taller
-			else
-			{
-				return new Vector(screen_size.x, screen_size.x / image_aspect_ratio);
-			}
-		}
-
-		function get_orig_point(image_display_size, screen_size)
-		{
-			return new Vector((screen_size.x - image_display_size.x) / 2, (screen_size.y - image_display_size.y) / 2);
-		}
-
-		//get relative coordinate using absolute coordinate and the origin's coordinate
-		function get_rel_coordinate(given_point_absol, orig_point_absol)
-		{
-			return new Vector(given_point_absol.x - orig_point_absol.x, given_point_absol.y - orig_point_absol.y);
-		}
-		function reverse_rel_coordinate(given_point_rel, orig_point_absol)
-		{
-			return new Vector(given_point_rel.x + orig_point_absol.x, given_point_rel.y + orig_point_absol.y);
-		}
-
-		//get percentage coordinate from relative coordinate and the size of the base
-		function get_perc_coordinate(given_point_pix, ground_size)
-		{
-			return new Vector(given_point_pix.x / ground_size.x, given_point_pix.y / ground_size.y);
-		}
-		function reverse_perc_coordinate(given_point_perc, ground_size)
-		{
-			return new Vector(given_point_perc.x * ground_size.x, given_point_perc.y * ground_size.y);
-		}
-
-		//mybox must be a normalized box
-		function realign_overflow_box(mybox)
-		{
-			var top_left_point_perc = mybox.top_left_point;
-			var bottom_right_point_perc = mybox.bottom_right_point;
-
-			if (bottom_right_point_perc.x > 1) 
-			{
-				top_left_point_perc.x -= bottom_right_point_perc.x - 1;
-				bottom_right_point_perc.x = 1;
-			}
-			if (top_left_point_perc.x < 0) 
-			{
-				bottom_right_point_perc.x += 0 - top_left_point_perc.x;
-				top_left_point_perc.x = 0;
-			}
-			if (bottom_right_point_perc.x > 1) //image is too wide
-			{
-				var zoom_ratio = 1/bottom_right_point_perc.x;
-				bottom_right_point_perc.y = top_left_point_perc.y + zoom_ratio*(bottom_right_point_perc.y - top_left_point_perc.y)
-				bottom_right_point_perc.x = 1;
-			}
-
-			if (bottom_right_point_perc.y > 1) 
-			{
-				top_left_point_perc.y -= bottom_right_point_perc.y - 1;
-				bottom_right_point_perc.y = 1;
-			}
-			if (top_left_point_perc.y < 0) 
-			{
-				bottom_right_point_perc.y += 0 - top_left_point_perc.y;
-				top_left_point_perc.y = 0;
-			}
-			if (bottom_right_point_perc.y > 1) //image is too tall
-			{
-				var zoom_ratio = 1/bottom_right_point_perc.y;
-				bottom_right_point_perc.x = top_left_point_perc.x + zoom_ratio*(bottom_right_point_perc.x - top_left_point_perc.x)
-				bottom_right_point_perc.y = 1;
-			}
-			
-			return new Box(top_left_point_perc, bottom_right_point_perc);
-		}
-
-		function info_log(message)
+			function info_log(message)
 		{
 			var info_holder = $('#image-holder');
 			info_holder.html(info_holder.html()+'<pre>'+message+'</pre>');
