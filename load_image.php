@@ -5,13 +5,12 @@ if (is_ajax()){
 	$db = new SQLite3('my_database.db') or die('Unable to open database');
 
 	//TODO: randomly select one image that has no submission yet
-	$query = "SELECT * FROM images WHERE id IN (SELECT id FROM images EXCEPT SELECT image_id FROM boxes) ORDER BY request_count ASC";
+	$query = "SELECT * FROM images WHERE gender = ''";
 
 	$result = $db->query($query) or die('Query fail');
 
 	//pass info of the image as json back to client
 	$return = $result->fetchArray(SQLITE3_ASSOC);
-	if(!$db->exec("UPDATE images SET request_count=".($return['request_count']+1)." WHERE id = ".$return['id'])) echo('fail to update request count'); 
 
 	echo json_encode($return);
 }
