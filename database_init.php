@@ -2,20 +2,19 @@
 	$db = new SQLite3('my_database.db') or die('unable to connect to database');
 	//drop previous tables
 	$db->exec("DROP TABLE IF EXISTS images");
-	$db->exec("DROP TABLE IF EXISTS boxes");
 	//create tables
-	$db->exec("CREATE TABLE images(id INTEGER PRIMARY KEY, path varchar(255), request_count INTEGER)") or die("create images failed");
-	$db->exec("CREATE TABLE boxes(id INTEGER PRIMARY KEY, positive_classification INTEGER, image_id INTEGER, first_point_X REAL, first_point_Y REAL, second_point_X REAL, second_point_Y REAL)");
-	//feed in the images table
-	$files = scan('images');
+	$db->exec("CREATE TABLE images(id INTEGER PRIMARY KEY, name text, image text)") or die("create images failed");
+    //feed in the images table
+    $root_dir = ('undetermined')
+	$files = scan($root_dir);
 	$count = 0;
 
 	foreach($files as $file)
 	{
 		//insert the file with path
 		if ($file["type"] == "file")
-		{
-			$db->exec("INSERT INTO images (path, request_count) VALUES ('" . $file["path"] . "', 0)") or die("fail to insert into images");
+        {
+			$db->exec("INSERT INTO images (name, image) VALUES ('" . substr(basename($path["path"]), 0, -9) . "', '" . $file["path"] . "')") or die("fail to insert into images");
 			$count += 1;
 		}
 	}
