@@ -3,7 +3,7 @@
 	//drop previous tables
 	$db->exec("DROP TABLE IF EXISTS images");
 	//create tables
-	$db->exec("CREATE TABLE images(id INTEGER PRIMARY KEY, name text, path text)") or die("create images failed");
+	$db->exec("CREATE TABLE images(id INTEGER PRIMARY KEY, name text, path text, gender text)") or die("create images failed");
     //feed in the images table
     $root_dir = ('undetermined')
 	$files = scan($root_dir);
